@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Дневник тренировок</title>
+<style>
+    /* Общие стили */
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #1e1e1e;
+        color: #e0e0e0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 900px;
+        padding: 0 15px;
+        box-sizing: border-box;
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .tabs {
+        display: flex;
+        margin-bottom: 18px;
+        user-select: none;
+    }
+    .tab {
+        flex: 1;
+        text-align: center;
+        padding: 10px 0;
+        cursor: pointer;
+        background: #2b2b2b;
+        border: 1px solid #444;
+        border-bottom: none;
+        font-weight: bold;
+        transition: background-color 0.2s ease;
+    }
+    .tab:not(.active):hover { background: #3a3a3a; }
+    .tab.active { background: #4caf50; color: #fff; border-bottom: 2px solid #1d7a19; }
+
+    .form-section, .list-section {
+        background: #2b2b2b;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    }
+
+    label { display:block; margin-top:10px; cursor:pointer; user-select:none; }
+
+    input[type="text"], input[type="number"], input[type="date"], select {
+        padding: 8px;
+        margin-top: 6px;
+        width: 100%;
+        box-sizing: border-box;
+        border-radius: 4px;
+        border: none;
+        background: #3c3c3c;
+        color: #e0e0e0;
+        font-size: 14px;
+    }
+    input:focus, select:focus { outline:none; background:#505050; }
+
+    button {
+        cursor: pointer;
+        background: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 10px 14px;
+        font-weight: bold;
+        font-size: 14px;
+        transition: background-color 0.2s ease;
+        user-select: none;
+    }
+    button:hover, button:focus { background: #45a049; outline: none; }
+
+    /* Список тренировок */
+    #workoutList { display:flex; flex-direction:column; gap:14px; }
+    .workout {
+        background:#333;
+        border-radius:8px;
+        padding:14px 18px;
+        box-shadow:0 2px 6px rgba(0,0,0,0.6);
+        user-select:none;
+    }
+    .workout-title {
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:12px;
+    }
+    .workout-left {
+        display:flex;
+        flex-direction:column;
+        gap:6px;
+    }
+    .workout-main-line {
+        display:flex;
+        align-items:center;
+        gap:12px;
+        font-weight:700;
+        cursor:pointer;
+    }
+    .workout-date {
+        font-weight:500;
+        color:#cfcfcf;
+        font-size:13px;
+    }
+
+    .action-btns {
+        display:flex;
+        gap:8px;
+    }
+    .action-btns button {
+        width:32px;
+        height:32px;
+        font-size:18px;
+        line-height:32px;
+        padding:0;
+        border-radius:6px;
+        background:transparent;
+        color:#e0e0e0;
+        transition:background-color .2s ease;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        border:none;
+        cursor:pointer;
+    }
+    .action-btns button:hover, .action-btns button:focus { background:#4caf50; color:white; outline:none; }
+
+    .workout-details {
+        margin-top:12px;
+        display:none;
+        gap:10px;
+        flex-wrap:wrap;
+    }
+    /* карточки упражнений в деталях тренировки */
+    .exercise-card {
+        background:#3c3c3c;
+        padding:10px 12px;
+        border-radius:10px;
+        min-width:160px;
+        max-width:100%;
+        box-shadow:0 2px 6px rgba(0,0,0,0.5);
+        display:flex;
+        flex-direction:column;
+        gap:6px;
+        font-size:14px;
+    }
+    .exercise-card .ex-name { font-weight:700; }
+    .exercise-card .ex-meta { color:#d0d0d0; font-size:13px; }
+
+    /* Список упражнений (вкладка Упражнения) */
+    #exerciseList { display:flex; flex-direction:column; gap:8px; }
+    .exercise-list-item {
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        padding:8px 10px;
+        background:#3c3c3c;
+        border-radius:6px;
+        font-size:15px;
+    }
+    .exercise-list-item button {
+        flex-shrink:0;
+        width:32px;
+        height:32px;
+        font-size:18px;
+        line-height:32px;
+        border-radius:6px;
+        background:transparent;
+        border:none;
+        color:#e0e0e0;
+        cursor:pointer;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        transition:background-color .2s ease;
+    }
+    .exercise-list-item button:hover, .exercise-list-item button:focus { background:#4caf50; color:white; outline:none; }
+
+    /* Форма добавления упражнения в тренировке */
+    .exercise-item {
+        display:flex;
+        gap:8px;
+        margin-top:8px;
+        background:#3c3c3c;
+        padding:8px;
+        border-radius:8px;
+        align-items:center;
+    }
+    .exercise-item select, .exercise-item input[type="number"] { flex:1 1 120px; min-width:100px; }
+    .exercise-item button.delete-exercise-entry {
+        flex-shrink:0;
+        width:32px;
+        height:32px;
+        border-radius:6px;
+        background:transparent;
+        border:none;
+        color:#e0e0e0;
+        cursor:pointer;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        transition:background-color .2s ease;
+        margin-left:4px;
+    }
+    .exercise-item button.delete-exercise-entry:hover, .exercise-item button.delete-exercise-entry:focus { background:#4caf50; color:white; outline:none; }
+
+    /* Модальное окно подтверждения */
+    #modalOverlay {
+        position:fixed;
+        top:0; left:0; right:0; bottom:0;
+        background:rgba(0,0,0,0.7);
+        display:none;
+        justify-content:center;
+        align-items:center;
+        z-index:9999;
+    }
+    #modalWindow {
+        background:#2b2b2b;
+        padding:20px 26px;
+        border-radius:10px;
+        max-width:360px;
+        width:90%;
+        text-align:center;
+        color:#e0e0e0;
+        box-shadow:0 8px 20px rgba(0,0,0,0.6);
+    }
+    #modalWindow p { margin-bottom:18px; font-size:15px; }
+    #modalButtons { display:flex; justify-content:center; gap:16px; }
+    #modalYes {
+        background:#4caf50; color:white; border:none; padding:10px 16px; border-radius:8px; font-weight:700; cursor:pointer;
+    }
+    #modalNo {
+        background:#d9534f; color:white; border:none; padding:10px 16px; border-radius:8px; font-weight:700; cursor:pointer;
+    }
+    #modalYes:hover { background:#45a049; } #modalNo:hover { background:#c9302c; }
+
+    /* Вкладка Данные */
+    .data-actions { display:flex; flex-direction:column; gap:10px; max-width:420px; margin:0 auto; }
+    #saveDataBtn { padding:12px; font-size:15px; font-weight:700; }
+    #importFile { display:none; }
+    #importLabel {
+        display:inline-block;
+        background:#4caf50;
+        color:#fff;
+        padding:10px 14px;
+        border-radius:8px;
+        cursor:pointer;
+        font-weight:700;
+    }
+    #importLabel:hover { background:#45a049; }
+
+    /* Адаптив */
+    @media (max-width:480px) {
+        .exercise-item { flex-direction:column; align-items:stretch; }
+        .action-btns { gap:6px; }
+        .workout-main-line { flex-direction:column; align-items:flex-start; gap:6px; }
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>Дневник тренировок</h1>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('trainings')">Тренировки</div>
+        <div class="tab" onclick="switchTab('exercises')">Упражнения</div>
+        <div class="tab" onclick="switchTab('data')">Данные</div>
+    </div>
+
+    <!-- Тренировки: теперь это контейнер вкладки, внутри — форма и список -->
+    <div id="trainingsTab">
+        <button id="openCreateWorkoutBtn" type="button" style="width:100%;margin-bottom:18px;padding:14px 0;font-size:17px;font-weight:700;background:#388e3c;color:#fff;border:none;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.18);cursor:pointer;transition:background 0.2s;">Создать тренировку</button>
+        <div id="createWorkoutForm" class="form-section" style="display:none;">
+            <h2 style="margin-top:0;">Создать тренировку</h2>
+            <label for="workoutTitle">Название тренировки:</label>
+            <input id="workoutTitle" type="text" placeholder="Например: Грудь и бицепс" autocomplete="off" />
+            <label for="workoutDate">Дата тренировки:</label>
+            <input id="workoutDate" type="date" style="margin-bottom:10px;" />
+            <label for="exerciseEntries" style="font-size:16px;font-weight:600;display:block;margin-top:14px;">Упражнения</label>
+            <div id="exerciseEntries"></div>
+            <button id="addExerciseEntryBtn" type="button" style="margin-top:10px;width:180px;background:transparent;color:#4caf50;border:1.5px solid #4caf50;font-weight:600;display:flex;align-items:center;gap:7px;justify-content:center;">
+                <span style="font-size:20px;line-height:1;">+</span> Добавить упражнение
+            </button>
+            <div id="noExercisesStub" style="color:#aaa;margin-top:10px;display:none;">Нет добавленных упражнений</div>
+            <div style="display:flex;gap:10px;margin-top:18px;">
+                <button id="saveWorkoutBtn" type="button" style="flex:1;background:#4caf50;color:#fff;font-weight:700;">Сохранить тренировку</button>
+                <button id="cancelWorkoutBtn" type="button" style="flex:1;background:transparent;color:#fff;border:1.5px solid #888;font-weight:600;">Отмена</button>
+            </div>
+        </div>
+        <div class="list-section">
+            <h2>Список тренировок</h2>
+            <div id="workoutList"></div>
+        </div>
+    </div>
+
+    <!-- Упражнения -->
+    <div id="exercisesTab" class="form-section" style="display:none;">
+        <h2>Список упражнений</h2>
+        <input id="exerciseName" type="text" placeholder="Название упражнения" autocomplete="off" />
+        <button type="button" onclick="addExercise()" style="margin-top:10px; width:100%;">Добавить упражнение</button>
+        <div id="exerciseList" style="margin-top:12px;"></div>
+    </div>
+
+    <!-- Данные (Экспорт/Импорт) -->
+    <div id="dataTab" class="form-section" style="display:none;">
+        <h2>Экспорт / Импорт</h2>
+        <div class="data-actions">
+            <button id="saveDataBtn" type="button">Сохранить данные</button>
+
+            <label id="importLabel" for="importFile" tabindex="0">Выбрать файл для импорта</label>
+            <input id="importFile" type="file" accept=".json" />
+        </div>
+    </div>
+</div>
+
+<!-- Модальное подтверждения -->
+<div id="modalOverlay">
+    <div id="modalWindow" role="dialog" aria-modal="true">
+        <p id="modalMessage"></p>
+        <div id="modalButtons">
+            <button id="modalYes">Да</button>
+            <button id="modalNo">Нет</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* Данные */
+let exercises = [];
+let workouts = [];
+
+/* Keys */
+const STORAGE_KEY = 'trainingAppData_v1';
+
+/* Вкладки */
+function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    // Скрываем все вкладки
+    document.getElementById('trainingsTab').style.display = 'none';
+    document.getElementById('exercisesTab').style.display = 'none';
+    document.getElementById('dataTab').style.display = 'none';
+
+    if (tab === 'trainings') {
+        document.querySelector('.tab:nth-child(1)').classList.add('active');
+        document.getElementById('trainingsTab').style.display = 'block';
+        renderWorkouts();
+        renderExerciseEntriesOptions();
+    } else if (tab === 'exercises') {
+        document.querySelector('.tab:nth-child(2)').classList.add('active');
+        document.getElementById('exercisesTab').style.display = 'block';
+        renderExerciseList();
+    } else {
+        document.querySelector('.tab:nth-child(3)').classList.add('active');
+        document.getElementById('dataTab').style.display = 'block';
+    }
+}
+
+/* Модальное окно подтверждения */
+const modalOverlay = document.getElementById('modalOverlay');
+const modalMessage = document.getElementById('modalMessage');
+const modalYes = document.getElementById('modalYes');
+const modalNo = document.getElementById('modalNo');
+
+function confirmAction(message, onYes) {
+    modalMessage.textContent = message;
+    modalOverlay.style.display = 'flex';
+
+    function cleanup() {
+        modalOverlay.style.display = 'none';
+        modalYes.onclick = null;
+        modalNo.onclick = null;
+        document.removeEventListener('keydown', keyHandler);
+    }
+    function keyHandler(e) { if (e.key === 'Escape') cleanup(); }
+
+    modalYes.onclick = () => { cleanup(); onYes && onYes(); };
+    modalNo.onclick = () => { cleanup(); };
+    document.addEventListener('keydown', keyHandler);
+    modalYes.focus();
+}
+
+/* Работа с упражнениями */
+function addExercise() {
+    const input = document.getElementById('exerciseName');
+    const name = input.value.trim();
+    if (!name) return;
+    exercises.push({ name, deleted: false });
+    input.value = '';
+    saveDataToStorage();
+    renderExerciseList();
+    renderExerciseEntriesOptions();
+}
+
+function deleteExercise(index) {
+    confirmAction(`Вы точно хотите удалить упражнение "${exercises[index].name}"?`, () => {
+        exercises[index].deleted = true;
+        saveDataToStorage();
+        renderExerciseList();
+        renderExerciseEntriesOptions();
+    });
+}
+
+function renderExerciseList() {
+    const container = document.getElementById('exerciseList');
+    container.innerHTML = '';
+    exercises.forEach((ex, idx) => {
+        if (!ex.deleted) {
+            const el = document.createElement('div');
+            el.className = 'exercise-list-item';
+            el.textContent = ex.name;
+
+            const btn = document.createElement('button');
+            btn.title = 'Удалить упражнение';
+            btn.innerHTML = '✖';
+            btn.onclick = (e) => { e.stopPropagation(); deleteExercise(idx); };
+
+            el.appendChild(btn);
+            container.appendChild(el);
+        }
+    });
+}
+
+/* Добавление строки упражнения в форму тренировки */
+function addExerciseEntry() {
+    const container = document.getElementById('exerciseEntries');
+    if (exercises.filter(e => !e.deleted).length === 0) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.className = 'exercise-item';
+
+    const sel = document.createElement('select');
+    exercises.forEach(ex => {
+        if (!ex.deleted) {
+            const opt = document.createElement('option');
+            opt.value = ex.name;
+            opt.textContent = ex.name;
+            sel.appendChild(opt);
+        }
+    });
+
+    const weight = document.createElement('input'); weight.type = 'number'; weight.min = 0; weight.placeholder = 'Вес (кг)';
+    const reps = document.createElement('input'); reps.type = 'number'; reps.min = 0; reps.placeholder = 'Повторений';
+    const sets = document.createElement('input'); sets.type = 'number'; sets.min = 0; sets.placeholder = 'Подходов';
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'delete-exercise-entry';
+    delBtn.title = 'Удалить упражнение';
+    delBtn.innerHTML = '✖';
+    delBtn.onclick = () => wrapper.remove();
+
+    wrapper.appendChild(sel);
+    wrapper.appendChild(weight);
+    wrapper.appendChild(reps);
+    wrapper.appendChild(sets);
+    wrapper.appendChild(delBtn);
+
+    container.appendChild(wrapper);
+}
+
+/* Обновление опций в существующих select при изменении списка упражнений */
+function renderExerciseEntriesOptions() {
+    const selects = document.querySelectorAll('#exerciseEntries select');
+    selects.forEach(select => {
+        const previous = select.value;
+        select.innerHTML = '';
+        exercises.forEach(ex => {
+            if (!ex.deleted) {
+                const opt = document.createElement('option');
+                opt.value = ex.name;
+                opt.textContent = ex.name;
+                select.appendChild(opt);
+            }
+        });
+        if ([...select.options].some(o => o.value === previous)) select.value = previous;
+    });
+}
+
+/* Сохранение тренировки */
+function saveWorkout() {
+    const titleEl = document.getElementById('workoutTitle');
+    const dateEl = document.getElementById('workoutDate');
+
+    // Если дата не указана — автоматически подставляем текущую
+    if (!dateEl.value) {
+        dateEl.value = new Date().toISOString().slice(0,10);
+    }
+    const dateValue = dateEl.value;
+    // Обновить отображение даты
+    const dateDisplay = document.getElementById('dateDisplay');
+    if (dateDisplay && dateEl.value) {
+        const d = new Date(dateEl.value);
+        dateDisplay.textContent = d.toLocaleDateString('ru-RU');
+    }
+
+    const entries = document.querySelectorAll('#exerciseEntries .exercise-item');
+    const exercisesData = [];
+
+    entries.forEach(div => {
+        const sel = div.querySelector('select');
+        const inputs = div.querySelectorAll('input[type="number"]');
+        if (!sel || inputs.length < 3) return;
+
+        const name = sel.value;
+        const weight = Number(inputs[0].value) || 0;
+        const reps = Number(inputs[1].value) || 0;
+        const sets = Number(inputs[2].value) || 0;
+
+        exercisesData.push({ name, weight, reps, sets });
+    });
+
+    if (exercisesData.length === 0) {
+        // ничего не сохраняем
+        return;
+    }
+
+    const workout = {
+        id: Date.now(),
+        title: (titleEl.value.trim() || null),
+        date: dateValue,
+        exercises: exercisesData
+    };
+
+    workouts.push(workout);
+    saveDataToStorage();
+
+    // Очистка формы: оставляем дату установленной на текущую, чтобы удобно создавать следующую
+    titleEl.value = '';
+    dateEl.value = new Date().toISOString().slice(0,10);
+    document.getElementById('exerciseEntries').innerHTML = '';
+
+    renderWorkouts();
+}
+
+/* Рендер списка тренировок (с деталями) */
+function renderWorkouts() {
+    const container = document.getElementById('workoutList');
+    container.innerHTML = '';
+
+    if (!workouts || workouts.length === 0) {
+        container.textContent = 'Список тренировок пуст.';
+        return;
+    }
+
+    // Сортируем по дате (новые сверху)
+    const sorted = [...workouts].sort((a,b) => new Date(b.date) - new Date(a.date));
+
+    sorted.forEach(workout => {
+        const card = document.createElement('div'); card.className = 'workout';
+
+        const titleRow = document.createElement('div'); titleRow.className = 'workout-title';
+
+        const left = document.createElement('div'); left.className = 'workout-left';
+
+        const mainLine = document.createElement('div'); mainLine.className = 'workout-main-line';
+        const titleText = document.createElement('div');
+        titleText.textContent = workout.title ? workout.title : workout.date;
+        titleText.style.userSelect = 'none';
+
+        const dateText = document.createElement('div'); dateText.className = 'workout-date';
+        dateText.textContent = new Date(workout.date).toLocaleDateString('ru-RU');
+
+        mainLine.appendChild(titleText);
+        left.appendChild(mainLine);
+        left.appendChild(dateText);
+
+        // Кнопки действий
+        const actions = document.createElement('div'); actions.className = 'action-btns';
+        const dup = document.createElement('button'); dup.title = 'Дублировать тренировку'; dup.innerHTML = '⎘';
+        dup.onclick = (e) => {
+            e.stopPropagation();
+            const copy = {
+                id: Date.now(),
+                title: workout.title ? workout.title + ' (копия)' : null,
+                date: new Date().toISOString().slice(0,10),
+                exercises: JSON.parse(JSON.stringify(workout.exercises))
+            };
+            workouts.push(copy);
+            saveDataToStorage();
+            renderWorkouts();
+        };
+        const del = document.createElement('button'); del.title='Удалить тренировку'; del.innerHTML='✖';
+        del.onclick = (e) => {
+            e.stopPropagation();
+            confirmAction('Вы точно хотите удалить тренировку?', () => {
+                workouts = workouts.filter(w => w.id !== workout.id);
+                saveDataToStorage();
+                renderWorkouts();
+            });
+        };
+        actions.appendChild(dup);
+        actions.appendChild(del);
+
+        titleRow.appendChild(left);
+        titleRow.appendChild(actions);
+        card.appendChild(titleRow);
+
+        // Блок деталей: карточки упражнений (вес, повт., подходы)
+        const details = document.createElement('div'); details.className = 'workout-details';
+        // стилизуем как flex wrap
+        details.style.display = 'none';
+        details.style.marginTop = '12px';
+        details.style.flexWrap = 'wrap';
+
+        workout.exercises.forEach(ex => {
+            const exCard = document.createElement('div'); exCard.className = 'exercise-card';
+
+            const nameEl = document.createElement('div'); nameEl.className = 'ex-name'; nameEl.textContent = ex.name;
+            const meta1 = document.createElement('div'); meta1.className = 'ex-meta'; meta1.textContent = `Вес: ${ex.weight} кг`;
+            const meta2 = document.createElement('div'); meta2.className = 'ex-meta'; meta2.textContent = `Повторений: ${ex.reps}`;
+            const meta3 = document.createElement('div'); meta3.className = 'ex-meta'; meta3.textContent = `Подходов: ${ex.sets}`;
+
+            exCard.appendChild(nameEl);
+            exCard.appendChild(meta1);
+            exCard.appendChild(meta2);
+            exCard.appendChild(meta3);
+
+            details.appendChild(exCard);
+        });
+
+        card.appendChild(details);
+
+        // Клик по mainLine открывает/закрывает детали
+        mainLine.onclick = () => {
+            if (details.style.display === 'flex') details.style.display = 'none';
+            else details.style.display = 'flex';
+        };
+
+        container.appendChild(card);
+    });
+}
+
+/* LocalStorage: сохранение/загрузка */
+function saveDataToStorage() {
+    try {
+        const payload = { exercises, workouts };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    } catch (e) {
+        console.error('Ошибка сохранения в localStorage', e);
+    }
+}
+
+function loadDataFromStorage() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        exercises = parsed.exercises || [];
+        workouts = parsed.workouts || [];
+    } catch (e) {
+        console.error('Ошибка загрузки из localStorage', e);
+    }
+}
+
+/* Экспорт данных — скачиваем JSON */
+document.getElementById('saveDataBtn').addEventListener('click', () => {
+    const data = { exercises, workouts };
+    const jsonStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+
+    a.href = url;
+    a.download = `training_data_${yyyy}-${mm}-${dd}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+});
+
+/* Импорт данных из файла (с подтверждением замены) */
+const importInput = document.getElementById('importFile');
+importInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        try {
+            const parsed = JSON.parse(ev.target.result);
+            if (!Array.isArray(parsed.exercises) || !Array.isArray(parsed.workouts)) {
+                alert('Формат файла некорректен.');
+                e.target.value = '';
+                return;
+            }
+            confirmAction('Импорт данных заменит текущие тренировки и упражнения. Продолжить?', () => {
+                exercises = parsed.exercises;
+                workouts = parsed.workouts;
+                saveDataToStorage();
+                renderExerciseList();
+                renderWorkouts();
+                renderExerciseEntriesOptions();
+                switchTab('trainings');
+            });
+        } catch (err) {
+            alert('Ошибка чтения файла. Убедитесь, что это валидный JSON.');
+        } finally {
+            e.target.value = '';
+        }
+    };
+    reader.readAsText(file);
+});
+
+/* Утилиты: дата по умолчанию */
+function setDefaultDate() {
+    const dateInput = document.getElementById('workoutDate');
+    if (!dateInput.value) {
+        dateInput.value = new Date().toISOString().slice(0,10);
+    }
+}
+
+/* Поведение поля даты: запрет ручного ввода, showPicker на фокус/клик */
+function attachDateBehavior() {
+    // Ничего не требуется: стандартный input[type=date] работает сам
+}
+
+/* Инициализация */
+function init() {
+    loadDataFromStorage();
+    renderExerciseList();
+    renderWorkouts();
+    renderExerciseEntriesOptions();
+    setDefaultDate();
+    attachDateBehavior();
+}
+
+init();
+
+// --- Новый функционал для показа/скрытия формы создания тренировки ---
+const openBtn = document.getElementById('openCreateWorkoutBtn');
+const form = document.getElementById('createWorkoutForm');
+const saveBtn = document.getElementById('saveWorkoutBtn');
+const cancelBtn = document.getElementById('cancelWorkoutBtn');
+const addExBtn = document.getElementById('addExerciseEntryBtn');
+const exEntries = document.getElementById('exerciseEntries');
+const noExStub = document.getElementById('noExercisesStub');
+
+// Назначаем обработчик на кнопку сохранения тренировки
+saveBtn.onclick = function() {
+    saveWorkout();
+    hideWorkoutForm();
+};
+
+function resetWorkoutForm() {
+    document.getElementById('workoutTitle').value = '';
+    document.getElementById('workoutDate').value = new Date().toISOString().slice(0,10);
+    exEntries.innerHTML = '';
+    updateNoExercisesStub();
+}
+function showWorkoutForm() {
+    form.style.display = '';
+    openBtn.style.display = 'none';
+    resetWorkoutForm();
+}
+function hideWorkoutForm() {
+    form.style.display = 'none';
+    openBtn.style.display = '';
+    resetWorkoutForm();
+}
+openBtn.onclick = showWorkoutForm;
+cancelBtn.onclick = hideWorkoutForm;
+
+function updateNoExercisesStub() {
+    if (exEntries.children.length === 0) {
+        noExStub.style.display = '';
+    } else {
+        noExStub.style.display = 'none';
+    }
+}
+addExBtn.onclick = function() {
+    addExerciseEntry();
+    updateNoExercisesStub();
+};
+
+</script>
+</body>
+</html>
